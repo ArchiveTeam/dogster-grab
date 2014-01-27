@@ -170,7 +170,7 @@ class WgetArgs(object):
             "--warc-file",
                 ItemInterpolation("%(item_dir)s/%(warc_file_base)s"),
             "--warc-header", "operator: Archive Team",
-            "--warc-header", "wretch-dld-script-version: " + VERSION,
+            "--warc-header", "dogster-dld-script-version: " + VERSION,
             "--warc-header", ItemInterpolation("dogster-user: %(item_name)s"),
         ]
 
