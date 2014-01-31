@@ -51,9 +51,17 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
     local video_id = find_video(html_source)
 
     if not video_id then
-      io.stdout:write("WARNING Video ID not found in file!")
+      io.stdout:write("WARNING Video ID not found in file!\n")
       io.stdout:flush()
     else
+      -- TODO: we'll need to call another wget process with arguments
+      -- manually so we have a record in a warc file containing at least a
+      -- mapping of video id to video flv. maybe another python script
+      -- which has find_executable to find wget. don't forget to adapt
+      -- pipeline.py to upload these extra warcs!!
+      -- if you think this is overkill, we could use a text file but
+      -- that doesn't get uploaded to the Internet Archive.
+
       local file = assert(io.popen('./fliqz.py', 'r'))
       local video_url = file:read('*all')
       file:close()
@@ -63,7 +71,7 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
           url=video_url
         })
       else
-        io.stdout:write("WARNING Video ID not found in SOAP!")
+        io.stdout:write("WARNING Video ID not found in SOAP!\n")
         io.stdout:flush()
       end
     end
