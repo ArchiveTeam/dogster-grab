@@ -11,11 +11,17 @@ Anyway, please check out http://archiveteam.org/index.php?title=Dev
 '''
 from __future__ import print_function
 
+import hashlib
+import os.path
 import re
+from seesaw.util import find_executable
+import subprocess
 import sys
 import time
 import urllib2
 
+
+VERSION = '20140201.01'
 
 XML = '''<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 <SOAP-ENV:Body>
@@ -28,6 +34,10 @@ XML = '''<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/enve
 </i0:ad>
 </SOAP-ENV:Body>
 </SOAP-ENV:Envelope>'''
+
+
+class NoVideoError(Exception):
+    pass
 
 
 def main(video_id):
@@ -51,7 +61,7 @@ def main(video_id):
 
     if match:
         print(match.group(1))
-        return
+        return True
 
     url = 'http://services.fliqz.com/LegacyServices/Services/MediaAsset/Component/R20071201/service.svc'
     headers = {
@@ -70,20 +80,86 @@ def main(video_id):
 
     if match:
         print(match.group(1))
-        return
+        return True
 
-    sys.exit('No video found!')
+    raise NoVideoError("No video found!")
+
+
+WGET_LUA = find_executable(
+    "Wget+Lua",
+    ["GNU Wget 1.14.lua.20130523-9a5c"],
+    [
+        "./wget-lua",
+        "./wget-lua-warrior",
+        "./wget-lua-local",
+        "../wget-lua",
+        "../../wget-lua",
+        "/home/warrior/wget-lua",
+        "/usr/bin/wget-lua"
+    ]
+)
+
+
+def run_wget(url, video_id, dirpath):
+    wget_args = [
+        WGET_LUA,
+        "-U", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_1) AppleWebKit/537.73.11 (KHTML, like Gecko) Version/7.0.1 Safari/537.73.11",
+        "-nv",
+        "-o", os.path.join(
+            dirpath, "wget_video_{0}.log".format(video_id)
+        ),
+        "--no-check-certificate",
+        "--output-document", os.path.join(
+            dirpath, "wget_video_{0}.tmp".format(video_id)
+        ),
+        "--truncate-output",
+        "-e", "robots=off",
+        "--no-cookies",
+        "--rotate-dns",
+        "--timeout", "60",
+        "--tries", "2000",
+        "--waitretry", "3600",
+        "--warc-file", os.path.join(
+            dirpath, "video.{0}.{1}".format(video_id, hashlib.sha1(url).hexdigest()[:6])
+        ),
+        "--warc-header", "operator: Archive Team",
+        "--warc-header", "dogster-fliqz-dld-script-version: " + VERSION,
+        "--warc-header", "dogster-video-id: {0}".format(video_id),
+        "--header", "Content-Type: text/xml; charset=utf-8",
+        "--header", 'SOAPAction: "urn:fliqz.s.mac.20071201/IMediaAssetComponentService/ad"',
+        '--referer', 'http://rawdogster.web',
+        '--method', 'POST',
+        '--body-data', XML.format(video_id),
+        url
+    ]
+
+    subprocess.call(wget_args)
 
 
 if __name__ == '__main__':
     video_id = sys.argv[1]
+    dirpath = sys.argv[2]
 
     for dummy in xrange(2000):
         try:
             print('un-fliqzing video_id', video_id, file=sys.stderr)
-            main(video_id)
+            if main(video_id):
+                break
         except urllib2.HTTPError as error:
             print('un-fliqzing error', error, file=sys.stderr)
             time.sleep(60)
+        except NoVideoError:
+            print('No video found', file=sys.stderr)
+            time.sleep(60)
 
-    print('un-fliqzing gave up.', file=sys.stderr)
+    print("fliqzing wget", file=sys.stderr)
+    run_wget(
+        'http://services.fliqz.com/mediaassetcomponentservice/20071201/service.svc',
+        video_id, dirpath
+    )
+    run_wget(
+        'http://services.fliqz.com/LegacyServices/Services/MediaAsset/Component/R20071201/service.svc',
+        video_id, dirpath
+    )
+
+    print('un-fliqzing done.', file=sys.stderr)

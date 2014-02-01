@@ -228,6 +228,7 @@ pipeline = Pipeline(
         env={
             'item_type': ItemValue("item_type"),
             'item_data': ItemValue("item_data"),
+            'item_dir': ItemValue("item_dir"),
         }
     ),
     PrepareStatsForTracker(
