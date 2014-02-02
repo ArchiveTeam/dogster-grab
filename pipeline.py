@@ -1,15 +1,18 @@
 import datetime
 from distutils.version import StrictVersion
+import glob
 import hashlib
+import json
 import os
+import re
 import seesaw
-from seesaw.config import NumberConfigValue, StringConfigValue
-from seesaw.externalprocess import WgetDownload
+from seesaw.config import NumberConfigValue, StringConfigValue, realize
+from seesaw.externalprocess import WgetDownload, RsyncUpload, CurlUpload
 from seesaw.item import ItemInterpolation, ItemValue
 from seesaw.pipeline import Pipeline
 from seesaw.project import Project
 from seesaw.task import SimpleTask, LimitConcurrent
-from seesaw.tracker import (GetItemFromTracker, SendDoneToTracker,
+from seesaw.tracker import (GetItemFromTracker, SendDoneToTracker, 
     PrepareStatsForTracker, UploadWithTracker)
 from seesaw.util import find_executable
 import shutil
@@ -52,10 +55,10 @@ if not WGET_LUA:
 #
 # Update this each time you make a non-cosmetic change.
 # It will be added to the WARC files and reported to the tracker.
-VERSION = "20140126.01"
+VERSION = "20140201.01"
 USER_AGENT = 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.57 Safari/537.36'
 TRACKER_ID = 'dogster'
-TRACKER_HOST = 'tracker.archiveteam.org'
+TRACKER_HOST = 'localhost:9080'
 
 
 ###########################################################################
@@ -65,9 +68,14 @@ TRACKER_HOST = 'tracker.archiveteam.org'
 # SimpleTask class and have a process(item) method that is called for
 # each item.
 class CheckIP(SimpleTask):
-    def __init__(self, warc_prefix):
+    def __init__(self):
         SimpleTask.__init__(self, "CheckIP")
         self._counter = 0
+
+        StringConfigValue('dogster_joke',
+            name='Dog or Cat Preference',
+            description='Are you a dog or cat person?'
+        )
 
     def process(self, item):
         # NEW for 2014! Check if we are behind firewall/proxy
@@ -89,10 +97,6 @@ class PrepareDirectories(SimpleTask):
     def __init__(self, warc_prefix):
         SimpleTask.__init__(self, "PrepareDirectories")
         self.warc_prefix = warc_prefix
-        StringConfigValue('dogster_joke',
-            name='Dog or Cat Preference',
-            description='Are you a dog or cat person?'
-        )
 
     def process(self, item):
         item_name = item["item_name"]
@@ -122,17 +126,33 @@ class MoveFiles(SimpleTask):
         os.rename("%(item_dir)s/%(warc_file_base)s.warc.gz" % item,
               "%(data_dir)s/%(warc_file_base)s.warc.gz" % item)
 
+        files_to_upload = ["%(data_dir)s/%(warc_file_base)s.warc.gz" % item]
+
+        video_filenames = self.find_video_files(item)
+
+        for video_filename in video_filenames:
+            dirname, filename = os.path.split(video_filename)
+            new_path = os.path.join("%(data_dir)s" % item, filename)
+
+            os.rename(video_filename, new_path)
+            files_to_upload.append(new_path)
+
+        item['files_to_upload'] = files_to_upload
+
         shutil.rmtree("%(item_dir)s" % item)
+
+    def find_video_files(self, item):
+        return glob.glob("%(item_dir)s/video.*.warc.gz" % item)
 
 
 def get_hash(filename):
     with open(filename, 'rb') as in_file:
         return hashlib.sha1(in_file.read()).hexdigest()
 
-
-PIPELINE_SHA1 = get_hash(__file__)
-DOGSTER_SHA1 = get_hash(os.path.join(os.path.dirname(__file__)), 'dogster.lua')
-FLIQZ_SHA1 = get_hash(os.path.join(os.path.dirname(__file__)), 'fliqz.lua')
+CWD = os.getcwd()
+PIPELINE_SHA1 = get_hash(os.path.join(CWD, 'pipeline.py'))
+DOGSTER_SHA1 = get_hash(os.path.join(CWD, 'dogster.lua'))
+FLIQZ_SHA1 = get_hash(os.path.join(CWD, 'fliqz.lua'))
 
 
 def stats_id_function(item):
@@ -149,7 +169,7 @@ class WgetArgs(object):
     def realize(self, item):
         wget_args = [
             WGET_LUA,
-            "-U", ItemInterpolation("%(user_agent)s"),
+            "-U", USER_AGENT,
             "-nv",
             "-o", ItemInterpolation("%(item_dir)s/wget.log"),
             "--lua-script", "dogster.lua",
@@ -164,7 +184,6 @@ class WgetArgs(object):
             "--timeout", "60",
             "--tries", "inf",
             "--span-hosts",
-            "--no-parent",
             "--waitretry", "3600",
             "--domains", "dogster.com,catster.com,cdnster.com,fliqz.com",
             "--warc-file",
@@ -194,7 +213,58 @@ class WgetArgs(object):
                 globals()['bind_address']))
             print('')
 
-        return wget_args
+        return realize(wget_args, item)
+
+
+class CustomUploadWithTracker(UploadWithTracker):
+    def process_body(self, body, item):
+        data = json.loads(body)
+        if "upload_target" in data:
+            inner_task = None
+
+            if re.match(r"^rsync://", data["upload_target"]):
+                item.log_output("Uploading with Rsync to %s" % data["upload_target"])
+                inner_task = RsyncUpload(data["upload_target"], realize(self.files, item), target_source_path=self.rsync_target_source_path, bwlimit=self.rsync_bwlimit, extra_args=self.rsync_extra_args, max_tries=1)
+
+            elif re.match(r"^https?://", data["upload_target"]):
+                item.log_output("Uploading with Curl to %s" % data["upload_target"])
+
+                if len(self.files) != 1:
+                    item.log_output("Curl expects to upload a single file.")
+                    self.fail_item(item)
+                    return
+
+                inner_task = CurlUpload(data["upload_target"], self.files[0], self.curl_connect_timeout, self.curl_speed_limit, self.curl_speed_time, max_tries=1)
+
+            else:
+                item.log_output("Received invalid upload type.")
+                self.fail_item(item)
+                return
+
+            inner_task.on_complete_item += self._inner_task_complete_item
+            inner_task.on_fail_item += self._inner_task_fail_item
+            inner_task.enqueue(item)
+
+        else:
+            item.log_output("Tracker did not provide an upload target.")
+            self.schedule_retry(item)
+
+
+class CustomPrepareStatsForTracker(PrepareStatsForTracker):
+    def process(self, item):
+        total_bytes = {}
+        for (group, files) in self.file_groups.iteritems():
+            total_bytes[group] = sum([os.path.getsize(realize(f, item)) for f in realize(files, item)])
+
+        stats = {}
+        stats.update(self.defaults)
+        stats["item"] = item["item_name"]
+        stats["bytes"] = total_bytes
+
+        if self.id_function:
+            stats["id"] = self.id_function(item)
+
+        item["stats"] = realize(stats, item)
 
 
 downloader = globals()['downloader']  # quiet the code checker
@@ -214,10 +284,11 @@ project = Project(
         <a href="http://%s/%s/">Leaderboard</a></span></h2>
     <p><b>Dogster/Catster Communities</b> are put to sleep.</p>
     """ % (TRACKER_HOST, TRACKER_ID)
-    , utc_deadline=datetime.datetime(2014, 01, 03, 00, 00, 1)
+    , utc_deadline=datetime.datetime(2014, 03, 01, 00, 00, 1)
 )
 
 pipeline = Pipeline(
+    CheckIP(),
     GetItemFromTracker("http://%s/%s" % (TRACKER_HOST, TRACKER_ID), downloader,
         VERSION),
     PrepareDirectories(warc_prefix="dogster"),
@@ -231,10 +302,10 @@ pipeline = Pipeline(
             'item_dir': ItemValue("item_dir"),
         }
     ),
-    PrepareStatsForTracker(
+    CustomPrepareStatsForTracker(
         defaults={"downloader": downloader, "version": VERSION},
         file_groups={
-            "data": [ItemInterpolation("%(item_dir)s/%(warc_file_base)s.warc.gz")]
+            "data": ItemValue("files_to_upload")
         },
         id_function=stats_id_function,
     ),
@@ -242,14 +313,11 @@ pipeline = Pipeline(
     LimitConcurrent(NumberConfigValue(min=1, max=4, default="1",
         name="shared:rsync_threads", title="Rsync threads",
         description="The maximum number of concurrent uploads."),
-        UploadWithTracker(
+        CustomUploadWithTracker(
             "http://%s/%s" % (TRACKER_HOST, TRACKER_ID),
             downloader=downloader,
             version=VERSION,
-            files=[
-                ItemInterpolation("%(data_dir)s/%(warc_file_base)s.warc.gz"),
-                ItemInterpolation("%(data_dir)s/%(warc_file_base)s.friends")
-                ],
+            files=ItemValue("files_to_upload"),
             rsync_target_source_path=ItemInterpolation("%(data_dir)s/"),
             rsync_extra_args=[
                 "--recursive",
