@@ -58,7 +58,7 @@ if not WGET_LUA:
 VERSION = "20140205.01"
 USER_AGENT = 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.57 Safari/537.36'
 TRACKER_ID = 'dogster'
-TRACKER_HOST = 'localhost:9080'
+TRACKER_HOST = 'tracker.archiveteam.org'
 
 
 ###########################################################################
