@@ -55,7 +55,7 @@ if not WGET_LUA:
 #
 # Update this each time you make a non-cosmetic change.
 # It will be added to the WARC files and reported to the tracker.
-VERSION = "20140201.01"
+VERSION = "20140205.01"
 USER_AGENT = 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.57 Safari/537.36'
 TRACKER_ID = 'dogster'
 TRACKER_HOST = 'localhost:9080'
@@ -302,6 +302,7 @@ pipeline = Pipeline(
             'item_dir': ItemValue("item_dir"),
         }
     ),
+    MoveFiles(),
     CustomPrepareStatsForTracker(
         defaults={"downloader": downloader, "version": VERSION},
         file_groups={
@@ -309,7 +310,6 @@ pipeline = Pipeline(
         },
         id_function=stats_id_function,
     ),
-    MoveFiles(),
     LimitConcurrent(NumberConfigValue(min=1, max=4, default="1",
         name="shared:rsync_threads", title="Rsync threads",
         description="The maximum number of concurrent uploads."),
