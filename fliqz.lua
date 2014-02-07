@@ -2,10 +2,10 @@
 -- and fliqz.py
 
 function find_video(html_source)
-  local id = string.match(html_source, [[<param name=["']flashvars["'] value=["']file=([a-f0-9]+)]])
+  local id = string.match(html_source, [[<param name=["']flashvars["'] value=["']file=([a-fA-F0-9]+)]])
 
   if not id then
-    id = string.match(html_source, [[$embed_url.-([a-f0-9]+)]])
+    id = string.match(html_source, [[$embed_url.-([a-fA-F0-9]+)]])
   end
 
   io.stdout:write(" Video id " .. tostring(id))
