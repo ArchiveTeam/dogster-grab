@@ -72,11 +72,6 @@ class CheckIP(SimpleTask):
         SimpleTask.__init__(self, "CheckIP")
         self._counter = 0
 
-        StringConfigValue('dogster_joke',
-            name='Dog or Cat Preference',
-            description='Are you a dog or cat person?'
-        )
-
     def process(self, item):
         # NEW for 2014! Check if we are behind firewall/proxy
         ip_str = socket.gethostbyname('dogster.com')
