@@ -277,14 +277,15 @@ downloader = globals()['downloader']  # quiet the code checker
 project = Project(
     title="Dogster/Catster Communities",
     project_html="""
-    <img class="project-logo" alt="" src="http://archiveteam.org/images/6/65/Dogster_logo.jpg" height="50" />
+    <img class="project-logo" alt="" src="http://archiveteam.org/images/6/65/Dogster_logo.jpg" height="50"
+    title="DOG GOES WOOF / CAT GOES MEOW" />
     <h2>Dogster/Catster <span class="links">
         <a href="http://www.dogster.com/">Dogster Website</a> &middot;
         <a href="http://www.catster.com/">Catster Website</a> &middot;
         <a href="http://%s/%s/">Leaderboard</a></span></h2>
     <p><b>Dogster/Catster Communities</b> are put to sleep.</p>
     """ % (TRACKER_HOST, TRACKER_ID)
-    , utc_deadline=datetime.datetime(2014, 03, 01, 00, 00, 1)
+    , utc_deadline=datetime.datetime(2014, 03, 03, 00, 00, 1)
 )
 
 pipeline = Pipeline(
