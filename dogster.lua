@@ -32,9 +32,9 @@ wget.callbacks.download_child_p = function(urlpos, parent, depth, start_url_pars
     or string.match(urlpos['url']['url'], "[gt]ster%.com/cats/([0-9]+)") == item_data) then
       verdict = true
     elseif verdict
-    and (string.match(urlpos['url']['url'], "[gt]ster%.com/video/book?i=([0-9]+)")  == item_data
+    and (string.match(urlpos['url']['url'], "[gt]ster%.com/video/book%?i=([0-9]+)")  == item_data
     or string.match(urlpos['url']['url'], "[gt]ster%.com/video/([0-9]+)")  == item_data
-    or string.match(urlpos['url']['url'], "[gt]ster%.com/friends_page.php?i=([0-9]+)") == item_data) then
+    or string.match(urlpos['url']['url'], "[gt]ster%.com/friends_page.php%?i=([0-9]+)") == item_data) then
       verdict = true
     else
       verdict = false
