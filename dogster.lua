@@ -55,7 +55,7 @@ wget.callbacks.httploop_result = function(url, err, http_stat)
   -- We're okay; sleep a bit (if we have to) and continue
   local sleep_time = 0.1 * (math.random(75, 125) / 100.0)
 
-  if string.match(url["host"], "cdnster%.com")
+  if string.match(url["host"], "cdnsters%.com")
   or string.match(url["host"], "files%.") then
     -- We should be able to go fast on images since that's what a web browser does
     sleep_time = 0

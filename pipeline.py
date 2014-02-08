@@ -180,7 +180,7 @@ class WgetArgs(object):
             "--tries", "inf",
             "--span-hosts",
             "--waitretry", "3600",
-            "--domains", "dogster.com,catster.com,cdnster.com,fliqz.com",
+            "--domains", "dogster.com,catster.com,cdnsters.com,fliqz.com",
             "--warc-file",
                 ItemInterpolation("%(item_dir)s/%(warc_file_base)s"),
             "--warc-header", "operator: Archive Team",
