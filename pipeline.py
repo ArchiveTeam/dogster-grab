@@ -79,7 +79,8 @@ class CheckIP(SimpleTask):
             item.log_output('Got IP address: %s' % ip_str)
             item.log_output(
                 'Are you behind a firewall/proxy? That is a big no-no!')
-            item.fail()
+            raise Exception(
+                'Are you behind a firewall/proxy? That is a big no-no!')
 
         # Check only occasionally
         if self._counter <= 0:
