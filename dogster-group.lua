@@ -22,7 +22,7 @@ wget.callbacks.download_child_p = function(urlpos, parent, depth, start_url_pars
       verdict = true
     elseif verdict
     and item_type == "group-page"
-    and string.match(urlpos['url']['path'], "/group/")
+    and string.match(urlpos['url']['path'], "group/")
     and string.match(urlpos['url']['path'], item_data) then
       -- matches urls like http://www.dogster.com/group/Rainbow_bridge_angel_babies-8835
       verdict = true
@@ -62,9 +62,3 @@ wget.callbacks.httploop_result = function(url, err, http_stat)
   return wget.actions.NOTHING
 end
 
-
-wget.callbacks.get_urls = function(file, url, is_css, iri)
-  local urls = {}
-
-  return urls
-end
