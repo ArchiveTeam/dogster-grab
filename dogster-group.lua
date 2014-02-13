@@ -14,6 +14,8 @@ local type_to_filename = {
 }
 
 wget.callbacks.download_child_p = function(urlpos, parent, depth, start_url_parsed, iri, verdict, reason)
+  -- io.stdout:write('url '.. urlpos['url']['url'] .. " " ..tostring(verdict).."\n")
+
   if string.match(urlpos['url']['url'], "[gt]ster%.com/") then
     local path_filename = type_to_filename[item_type]
     assert(path_filename)
@@ -27,13 +29,15 @@ wget.callbacks.download_child_p = function(urlpos, parent, depth, start_url_pars
       -- matches urls like http://www.dogster.com/group/Rainbow_bridge_angel_babies-8835
       verdict = true
     elseif verdict
-    and string.match(urlpos['url']['path'], "g=([0-9]+)") == item_data
+    and string.match(urlpos['url']['url'], "g=([0-9]+)") == item_data
     and string.match(urlpos['url']['path'], path_filename) then
       verdict = true
     else
       verdict = false
     end
   end
+
+  -- io.stdout:write('url '.. urlpos['url']['url'] .. " " ..tostring(verdict).."\n")
 
   return verdict
 end
