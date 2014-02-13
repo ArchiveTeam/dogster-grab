@@ -31,7 +31,13 @@ wget.callbacks.download_child_p = function(urlpos, parent, depth, start_url_pars
     elseif verdict
     and string.match(urlpos['url']['url'], "g=([0-9]+)") == item_data
     and string.match(urlpos['url']['path'], path_filename) then
-      verdict = true
+      if item_type == 'group-members'
+      and string.match(urlpos['url']['url'], "o=[a-zA-Z0-9]+") then
+        -- ignore the random members and sorted functions
+        verdict = false
+      else
+        verdict = true
+      end
     else
       verdict = false
     end
