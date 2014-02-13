@@ -6,13 +6,13 @@ import json
 import os
 import re
 import seesaw
-from seesaw.config import NumberConfigValue, StringConfigValue, realize
+from seesaw.config import NumberConfigValue, realize
 from seesaw.externalprocess import WgetDownload, RsyncUpload, CurlUpload
 from seesaw.item import ItemInterpolation, ItemValue
 from seesaw.pipeline import Pipeline
 from seesaw.project import Project
 from seesaw.task import SimpleTask, LimitConcurrent
-from seesaw.tracker import (GetItemFromTracker, SendDoneToTracker, 
+from seesaw.tracker import (GetItemFromTracker, SendDoneToTracker,
     PrepareStatsForTracker, UploadWithTracker)
 from seesaw.util import find_executable
 import shutil
@@ -55,7 +55,7 @@ if not WGET_LUA:
 #
 # Update this each time you make a non-cosmetic change.
 # It will be added to the WARC files and reported to the tracker.
-VERSION = "20140210.01"
+VERSION = "20140213.01"
 USER_AGENT = 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.57 Safari/537.36'
 TRACKER_ID = 'dogster'
 TRACKER_HOST = 'tracker.archiveteam.org'
@@ -168,14 +168,12 @@ class WgetArgs(object):
             "-U", USER_AGENT,
             "-nv",
             "-o", ItemInterpolation("%(item_dir)s/wget.log"),
-            "--lua-script", "dogster.lua",
             "--no-check-certificate",
             "--output-document", ItemInterpolation("%(item_dir)s/wget.tmp"),
             "--truncate-output",
             "-e", "robots=off",
             "--no-cookies",
             "--rotate-dns",
-            "--recursive", "--level=inf",
             "--page-requisites",
             "--timeout", "60",
             "--tries", "inf",
@@ -197,8 +195,37 @@ class WgetArgs(object):
 
         if item_type == 'profile':
             profile_id = item_data
+            wget_args.extend(["--recursive", "--level=inf"])
+            wget_args.extend(["--lua-script", "dogster.lua"])
             wget_args.append('http://www.dogster.com/dogs/%s' % profile_id)
             wget_args.append('http://www.catster.com/cats/%s' % profile_id)
+        elif item_type in ('group-page', 'group-messages', 'group-events',
+            'group-links', 'group-members'):
+            group_id = item_data
+
+            wget_args.extend(["--lua-script", "dogster-group.lua"])
+
+            if item_type != 'group-page':
+                wget_args.extend(["--recursive", "--level=inf"])
+
+            if item_type == 'group-page':
+                wget_args.append('http://www.dogster.com/group/grp_page.php?g=%s' % group_id)
+                wget_args.append('http://www.catster.com/group/grp_page.php?g=%s' % group_id)
+            elif item_type == 'group-messages':
+                wget_args.append('http://www.dogster.com/group/grp_message_list.php?g=%s' % group_id)
+                wget_args.append('http://www.catster.com/group/grp_message_list.php?g=%s' % group_id)
+            elif item_type == 'group-events':
+                wget_args.append('http://www.dogster.com/group/grp_event_list.php?g=%s' % group_id)
+                wget_args.append('http://www.catster.com/group/grp_event_list.php?g=%s' % group_id)
+            elif item_type == 'group-links':
+                wget_args.append('http://www.dogster.com/group/grp_link_list.php?g=%s' % group_id)
+                wget_args.append('http://www.catster.com/group/grp_link_list.php?g=%s' % group_id)
+            elif item_type == 'group-members':
+                wget_args.append('http://www.dogster.com/group/grp_member_list.php?g=%s' % group_id)
+                wget_args.append('http://www.catster.com/group/grp_member_list.php?g=%s' % group_id)
+            else:
+                raise Exception('A mistake was made in groups.')
+
         else:
             raise Exception('Unknown item_type')
 
