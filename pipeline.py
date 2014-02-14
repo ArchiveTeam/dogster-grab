@@ -55,7 +55,7 @@ if not WGET_LUA:
 #
 # Update this each time you make a non-cosmetic change.
 # It will be added to the WARC files and reported to the tracker.
-VERSION = "20140213.02"
+VERSION = "20140213.X3"
 USER_AGENT = 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.57 Safari/537.36'
 TRACKER_ID = 'dogster'
 TRACKER_HOST = 'tracker.archiveteam.org'
@@ -234,6 +234,15 @@ class WgetArgs(object):
 
             wget_args.append('http://www.dogster.com/forums/thread_url.php?thread_id=%s&page=1000000000' % thread_id)
             wget_args.append('http://www.catster.com/forums/thread_url.php?thread_id=%s&page=1000000000' % thread_id)
+
+        elif item_type == 'question':
+            question_id = item_data
+
+            wget_args.extend(["--lua-script", "dogster-question.lua"])
+            wget_args.extend(["--recursive", "--level=inf"])
+
+            wget_args.append('http://www.dogster.com/answers/question/-%s?archiveteam-rawdogster' % question_id)
+            wget_args.append('http://www.catster.com/answers/question/-%s?archiveteam-rawdogster' % question_id)
         else:
             raise Exception('Unknown item_type')
 
