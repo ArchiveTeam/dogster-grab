@@ -16,13 +16,11 @@ The pipeline currently supports
 * group-links:NNNN to download `http://www.dogster.com/group/grp_link_list.php?g=8835`
 * group-members:NNNN to download `http://www.dogster.com/group/grp_member_list.php?g=8835`
 
+* thread:NNNN to download `http://www.dogster.com/forums/thread_url.php?thread_id=486467`
+
 Proposed:
 
-* forums-group:NNNN to download http://www.dogster.com/forums/group/321196 (listings only)
-* thread-group:NNNN to download http://www.dogster.com/forums/group/thread/486467
-
-* thread-dogster:SSSS to download  `http://www.dogster.com/forums/When_its_Time_to_Say_Goodbye/thread/799482` (SSSS is `When_its_Time_to_Say_Goodbye/thread/799482`)
-* thread-catster:SSSS see above.
+* forums:NNNN to download `???` to get http://www.dogster.com/forums/group/321196
 
 * answers-dogster:SSSS to download `http://www.dogster.com/answers/question/my_dog_is_having_a_phantom_pregnancy_and_im_wondering_if_i_should_take_the_toy_shes_nesting_away_als-98178`
 * answers-catster:SSSS see above
