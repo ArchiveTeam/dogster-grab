@@ -189,17 +189,17 @@ if __name__ == '__main__':
     video_id = sys.argv[1]
     dirpath = sys.argv[2]
 
-    for dummy in xrange(2000):
+    for dummy in xrange(5):
         try:
             print('un-fliqzing video_id', video_id, file=sys.stderr)
             if main(video_id):
                 break
         except urllib2.HTTPError as error:
             print('un-fliqzing error', error, file=sys.stderr)
-            time.sleep(60)
+            time.sleep(5)
         except NoVideoError:
             print('No video found', file=sys.stderr)
-            time.sleep(60)
+            time.sleep(5)
 
     print("fliqzing wget", file=sys.stderr)
     run_wget(
