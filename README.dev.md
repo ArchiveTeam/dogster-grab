@@ -18,9 +18,11 @@ The pipeline currently supports
 
 * thread:NNNN to download `http://www.dogster.com/forums/thread_url.php?thread_id=486467`
 
+* question:NNNN to download `http://www.dogster.com/answers/question/my_dog_is_having_a_phantom_pregnancy_and_im_wondering_if_i_should_take_the_toy_shes_nesting_away_als-98178`
+
 Proposed:
 
-* forums:NNNN to download `???` to get http://www.dogster.com/forums/group/321196
+* forums:NNNN to download `???` to get http://www.dogster.com/forums/group/321196 (listings only)
+* answers:NNNN (listings only)
+* local:SSSS
 
-* answers-dogster:SSSS to download `http://www.dogster.com/answers/question/my_dog_is_having_a_phantom_pregnancy_and_im_wondering_if_i_should_take_the_toy_shes_nesting_away_als-98178`
-* answers-catster:SSSS see above
