@@ -28,6 +28,17 @@ wget.callbacks.download_child_p = function(urlpos, parent, depth, start_url_pars
     if verdict and urlpos["link_inline_p"] == 1 then
       verdict = true
     elseif verdict
+    and string.len(string.match(urlpos['url']['url'], "[gt]ster%.com/[a-zA-Z]+/[0-9]+/diary/[a-zA-Z0-9_-]+/[a-zA-Z]/([0-9]+)") or '') > 3
+    then
+      -- stop infinite pager
+      verdict = false
+    elseif verdict
+    and string.match(urlpos['url']['url'], "https:") or
+    string.match(urlpos['url']['url'], "[gt]ster%.com/[a-zA-Z]+/[0-9]+/diary/[a-zA-Z0-9_-]+/[^d]/")
+    then
+      -- stop paging so many things
+      verdict = false
+    elseif verdict
     and (string.match(urlpos['url']['url'], "[gt]ster%.com/dogs/([0-9]+)")  == item_data
     or string.match(urlpos['url']['url'], "[gt]ster%.com/cats/([0-9]+)") == item_data) then
       verdict = true
